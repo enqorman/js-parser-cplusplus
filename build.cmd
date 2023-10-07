@@ -1,0 +1,1 @@
+g++ -std=c++23 -Wall -Wextra -Werror -I . -o build/main main.cpp
