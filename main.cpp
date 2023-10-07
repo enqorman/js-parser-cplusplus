@@ -472,9 +472,9 @@ private:
 
 class IfStatement : public Statement {
 public:
-//              public readonly test: Expression | Identifier | Literal
-    IfStatement(Statement* body, Location location)
-        : m_body(body),
+    IfStatement(Expression* test, Statement* body, Location location)
+        : m_test(test),
+          m_body(body),
           m_location(location) {
         m_class_name = "IfStatement";
     }
@@ -484,6 +484,7 @@ public:
     }
 
 private:
+    Expression* m_test;
     Statement* m_body;
     Location m_location;
 };
@@ -491,8 +492,9 @@ private:
 class WhileStatement : public Statement {
 public:
 //              public readonly test: Expression | Identifier | Literal
-    WhileStatement(Statement* body, Location location)
-        : m_body(body),
+    WhileStatement(Expression* test, Statement* body, Location location)
+        : m_test(test),
+          m_body(body),
           m_location(location) {
         m_class_name = "WhileStatement";
     }
@@ -502,13 +504,13 @@ public:
     }
 
 private:
+    Expression* m_test;
     Statement* m_body;
     Location m_location;
 };
 
 class ExpressionStatement : public Statement {
 public:
-//              public readonly test: Expression | Identifier | Literal
     ExpressionStatement(Expression* expression, Location location)
         : m_expression(expression),
           m_location(location) {
@@ -819,6 +821,8 @@ public:
             }
             else if (isBinaryType(type)) 
                 ret = this->parse_binary_expression(ret);
+
+            printf("got ret: %s\n", ret->getClassName());
             return ret;
         }  
 
@@ -835,6 +839,7 @@ public:
         Expression* expression = this->parse_expression();
         if (!expression)
             return nullptr;
+        printf("expr %s\n", expression->getClassName());
         return new ExpressionStatement(expression, expression->getLocation());
     }
 
@@ -967,9 +972,7 @@ void print_literal(Literal* literal) {
 }
 
 void print_expression(Expression* expression) {
-    print_indent();
     const char* cls_name = expression->getClassName();
-
     if (strcmp(cls_name, "Identifier") == 0) {
         print_identifier(static_cast<Identifier*>(expression));
         return;
@@ -981,19 +984,18 @@ void print_expression(Expression* expression) {
     }
 
     else {    
-        printf("TODO[print_expression]: %s", cls_name);
+        print_indent();
+        printf("expression: %s", cls_name);
         return; 
     }
-
-    (void) expression;
-    printf("Expression");
 }
 
 void print_expression_statement(ExpressionStatement* expression_statement) {
+    Expression* expression = expression_statement->getExpression();
     print_indent();
     printf("ExpressionStatement(\n");
     print_indent();
-    print_expression(expression_statement->getExpression());
+    print_expression(expression);
     printf("\n");
     print_indent();
     printf(")");
