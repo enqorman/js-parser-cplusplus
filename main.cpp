@@ -326,9 +326,8 @@ private:
             "let", "const", "var",
             "private", "public", "protected", "override",
             "interface", "class", "enum",
-            "true", "false",
             "if", "while", "do", "else", "catch",
-            "null", "debugger"
+            "debugger"
         };
 
         #define KEYWORDS_LEN (sizeof(KEYWORDS) / sizeof(const char*))
@@ -790,13 +789,13 @@ public:
             return nullptr;
         }
 
-        else if (current.getType() == Lexer::TokenType::Identifier || 
-            current.getType() == Lexer::TokenType::Number || 
-            current.getType() == Lexer::TokenType::String ||
-            (current.getType() == Lexer::TokenType::Keyword && (data != nullptr && (strcmp(data, "true") == 0 || strcmp(data, "false") == 0 || strcmp(data, "null") == 0)))) {
+        else if (type == Lexer::TokenType::Identifier || 
+                 type == Lexer::TokenType::Number || 
+                 type == Lexer::TokenType::String) {
             Expression* ret;
             this->consume(type);
-            if (type == Lexer::TokenType::Identifier)
+            if (type == Lexer::TokenType::Identifier && 
+                (data != nullptr && (strcmp(data, "true") != 0 && strcmp(data, "false") != 0 && strcmp(data, "null") != 0)))
                 ret = new Identifier(data, location);
             else
                 ret = new Literal(data, location);
@@ -873,48 +872,35 @@ public:
         // let ret;
         if (type == Lexer::TokenType::Keyword) {
             Statement* ret = nullptr;
-
-            if (strcmp(slice, "async") == 0 || strcmp(slice, "function") == 0) {
+            if (strcmp(slice, "async") == 0 || strcmp(slice, "function") == 0) 
                 ret = this->parse_function_statement();
-            }
-
-            else if (strcmp(slice, "return") == 0) {
+            else if (strcmp(slice, "return") == 0) 
                 ret = this->parse_return_statement();
-            }
-
             else if (strcmp(slice, "const") == 0 || strcmp(slice, "let") == 0 || strcmp(slice, "var") == 0) {
-                report("TODO: variable declaration statement", current.getLocation());
+                report("TODO: variable declaration statement");
                 // ret = this->parse_variable_declaration();
             }
-
             else if (strcmp(slice, "true") == 0 || strcmp(slice, "false") == 0 || strcmp(slice, "null") == 0) {
                 report("TODO: literals");
-                // ret = new ExpressionStatement(this->parse_literal(), location);
+                // ret = this->parse_literal();
             }
-
-            else if (strcmp(slice, "if") == 0) {
+            else if (strcmp(slice, "if") == 0) 
                 ret = this->parse_if_statement();
-            }
 
-            else if (strcmp(slice, "while") == 0) {
+            else if (strcmp(slice, "while") == 0) 
                 ret = this->parse_while_statement();
-            }
-
             else if (strcmp(slice, "debugger") == 0) {
                 consume(Lexer::TokenType::Keyword);
-                ret = new DebuggerStatement(current.getLocation());     
+                ret = new DebuggerStatement(location);     
             }
-
             else if (strcmp(slice, "do") == 0 || strcmp(slice, "for") == 0) {
-                report("TODO: do/for statement", current.getLocation());
+                report("TODO: do/for statement");
                 return nullptr;
             }
-
             consume(Lexer::TokenType::Semicolon);
             if (ret)
                 return ret; 
-
-            report(std::format("TODO: statement keyword for {}", slice), location);
+            report(std::format("TODO: statement keyword for {}", slice));
             return nullptr;
         } 
 
@@ -941,7 +927,7 @@ public:
             return this->parse_expression_statement();
         }
 
-        fprintf(stderr, "[Parser::parse_statement] TODO: statement other for %i -> '%s'\n", current.getType(), current.getSlice());
+        report(std::format("TODO: statement other for {} -> '{}'\n", Lexer::TokenTypeName(type), slice));
         return nullptr;
     }
 
@@ -1061,9 +1047,10 @@ int main() {
     printf("token count: %llu\n", tokens.size());
     for (size_t i = 0; i < tokens.size(); ++i) {
         Lexer::Token token = tokens.at(i);
+        Lexer::TokenType type = token.getType(); 
         Location location = token.getLocation(); 
         printf("- (%s:%i:%i) ", location.getPath(), location.getRow(), location.getCol());
-        printf("> %s\n", token.getSlice());
+        printf("%s > %s\n", Lexer::TokenTypeName(type), token.getSlice());
     }
     printf("\n");
 
